@@ -8,7 +8,7 @@
 
 ## Description
 
-Appetiser SEO Manager is a lightweight plugin that adds essential SEO enhancements to your WordPress site.  
+Appetiser SEO Manager is a lightweight plugin that adds essential SEO enhancements to our website.  
 It works alongside plugins like Yoast SEO and is designed to extend core SEO features with automated tools.
 
 ---
@@ -20,6 +20,10 @@ It works alongside plugins like Yoast SEO and is designed to extend core SEO fea
 - ✅ Requires and integrates with `appetiser-common-assets` plugin
 
 More features coming soon...
+
+## Deployment
+
+Refer to appetiser-ops for deployment.
 
 ---
 
