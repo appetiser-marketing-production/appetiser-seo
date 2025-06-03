@@ -21,7 +21,7 @@ It works alongside plugins like Yoast SEO and is designed to extend core SEO fea
 
 More features coming soon...
 
-## Deployment
+## Deployment notes
 
 Refer to appetiser-ops for deployment.
 
