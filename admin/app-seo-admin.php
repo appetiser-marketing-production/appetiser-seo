@@ -3,6 +3,66 @@ class Appetiser_SEO_Admin {
 
     public function __construct() {
         add_action( 'wp_insert_post', array( $this, 'auto_generateblog_schema' ), 99, 3);
+
+//        add_action( 'admin_menu',  array( $this, 'add_plugin_menu' ) );
+
+//        add_action( 'admin_enqueue_scripts', array(  $this, 'enqueue_styles' ) );
+//        add_action( 'admin_enqueue_scripts', array(  $this, 'enqueue_scripts' ) );
+    }
+
+    public function enqueue_styles( $hook ) {
+        //if ($hook !== 'tools_page_appetiser-link-mapper') return;
+        if (!isset($_GET['page']) || $_GET['page'] !== 'appetiser-seo-enhancements') {
+            return;
+        }
+        
+        wp_enqueue_style('dashicons');
+
+        wp_enqueue_style( 'appetiser-dashboard-style', plugins_url() . '/appetiser-common-assets/admin/css/appetiser-dashboard.css', array(), '1.0.0', 'all' );
+ //       wp_enqueue_style( 'appetiser-link-exchange-style', plugin_dir_url( __FILE__ ) . 'css/app-link-exchange-admin.css', array(), '1.0.0', 'all' );
+    }
+
+    public function enqueue_scripts( $hook ) {
+        //if ($hook !== 'tools_page_appetiser-link-mapper') return;
+
+        if (!isset($_GET['page']) || $_GET['page'] !== 'appetiser-seo-enhancements') {
+            return;
+        }
+
+        wp_enqueue_script( 'appetiser-dashboard-script', plugins_url() . '/appetiser-common-assets/admin/js/appetiser-dashboard.js', array( 'jquery' ), '1.0.0', false );
+        wp_enqueue_script( 'appetiser-seo-admin-script', plugin_dir_url( __FILE__ ) . 'js/app-seo-admin.js', array( 'jquery' ), '1.0.0', true );
+
+        
+    }
+
+     public function add_plugin_menu() {
+        add_submenu_page(
+            'appetiser-tools',           //parent-slug
+            'SEO enhancements',     
+            'SEO enhancements',     
+            'manage_options',            
+            'appetiser-seo-enhancements',     //menu-slug
+            [$this, 'render_admin_page'] 
+        );
+    }
+
+     public function render_admin_page() {
+        ?>
+        <div class="wrap">
+            <h1>SEO Enhancements</h1>
+            <div class="tab">
+                <button class="tablinks" onclick="openTab(event, 'robots')" id="robotslink">Robots.txt</button>
+            </div>
+        
+            <div id="robots" class="tabcontent">
+                <h2>Robots.txt</h2>
+            </div>
+            <div class="bottomtab">
+                <a href="#" target="_blank">documentation</a>
+            </div>
+            
+        </div>
+        <?php
     }
 
     public function auto_generateblog_schema( $post_id, $post, $update ) {
