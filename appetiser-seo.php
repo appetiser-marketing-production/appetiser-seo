@@ -31,8 +31,10 @@ add_action('admin_init', function() {
 
 // Include admin class
 require_once plugin_dir_path(__FILE__) . 'admin/app-seo-admin.php';
+require_once plugin_dir_path(__FILE__) . 'public/app-seo-public.php';
 
 // Initialize admin
 if (is_admin()) {
     new Appetiser_SEO_Admin();
 }
+new Appetiser_SEO_Public();
