@@ -2,11 +2,8 @@
 class Appetiser_SEO_Public {
 
     public function __construct() {
-        add_action('wp', array($this, 'log_404_requests'));
-
-        if (is_singular('post') && get_option('app_seo_external_links') === '1') {
-            add_action('wp_footer', array($this, 'inject_external_link_script'), 100);
-        }
+        add_action( 'wp', array($this, 'log_404_requests'));
+        add_action( 'wp_footer', array( $this, 'public_link_handler' ) );
     }
 
     public function log_404_requests() {
@@ -18,7 +15,7 @@ class Appetiser_SEO_Public {
 
         if (get_transient($transient_key)) return;
         set_transient($transient_key, true, DAY_IN_SECONDS);
-
+        
         $referrer  = $_SERVER['HTTP_REFERER'] ?? 'Direct';
         $user_ip   = $_SERVER['REMOTE_ADDR'];
         $timestamp = current_time('mysql');
@@ -27,37 +24,41 @@ class Appetiser_SEO_Public {
         error_log($log_entry, 3, WP_CONTENT_DIR . '/404-log.txt');
     }
 
-    public function inject_external_link_script() {
-        ?>
-        <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const base = document.querySelector('.single div#single-article-content');
+    public function public_link_handler(){
+        if ( is_singular('post') && get_option('app_seo_external_links') === '1' ){
+            $excluded_raw = get_option('app_seo_nofollow_excluded_domains');
+            $excluded_domains = array_filter(array_map('trim', explode("\n", $excluded_raw)));
+            ?>
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (!document.body.classList.contains('single-post')) return;
 
-            if (!base) return;
+                const base = document.querySelector('.infinite-content-container');
+                if (!base) return;
 
-            // Set all links inside #single-article-content to _blank
-            base.querySelectorAll('a').forEach(link => {
-                link.setAttribute('target', '_blank');
+                const currentHost = location.hostname;
+                const excluded = <?php echo json_encode($excluded_domains); ?>;
+
+                base.querySelectorAll('a[href^="http"]').forEach(link => {
+                    const linkHost = (new URL(link.href, location.origin)).hostname;
+                    const isExternal = linkHost !== currentHost;
+                    const isExcluded = excluded.some(domain => linkHost.includes(domain));
+
+                    if (isExternal) {
+                        link.setAttribute('target', '_blank');
+                        if(!isExcluded){
+                            link.setAttribute('rel', 'nofollow');
+                        }
+                    }
+
+                    if (!isExternal){
+                        link.setAttribute('target', '_blank');
+                    }
+                });
             });
-
-            // Set links inside <ul><li> to _self
-            base.querySelectorAll('ul li a').forEach(link => {
-                link.setAttribute('target', '_self');
-            });
-
-            // Set links in <table> and <p> back to _blank
-            base.querySelectorAll('table a, p a').forEach(link => {
-                link.setAttribute('target', '_blank');
-            });
-
-            // Set links in ul#new li to _blank
-            base.querySelectorAll('ul#new li a').forEach(link => {
-                link.setAttribute('target', '_blank');
-            });
-        });
-        </script>
-        <?php
+            </script>
+            <?php
+        }
     }
-
 
 }

@@ -43,7 +43,7 @@ class Appetiser_SEO_Admin {
         wp_enqueue_style('dashicons');
 
         wp_enqueue_style( 'appetiser-dashboard-style', plugins_url() . '/appetiser-common-assets/admin/css/appetiser-dashboard.css', array(), '1.0.0', 'all' );
-        wp_enqueue_style( 'appetiser-seo-admin-style', plugin_dir_url( __FILE__ ) . 'css/app-link-exchange-admin.css', array(), '1.0.0', 'all' );
+        wp_enqueue_style( 'appetiser-seo-admin-style', plugin_dir_url( __FILE__ ) . 'css/app-seo-admin.css', array(), '1.0.0', 'all' );
     }
 
     public function enqueue_scripts( $hook ) {
@@ -144,7 +144,12 @@ class Appetiser_SEO_Admin {
         if (!isset($_POST['app_seo_general_nonce']) || !wp_verify_nonce($_POST['app_seo_general_nonce'], 'app_seo_general_save')) return;
 
         $toggle = isset($_POST['external_links_toggle']) ? '1' : '0';
-            update_option('app_seo_external_links', $toggle);
+        update_option('app_seo_external_links', $toggle);
+
+        // Save excluded domains
+        $excluded_raw = isset($_POST['nofollow_excluded_domains']) ? wp_unslash($_POST['nofollow_excluded_domains']) : '';
+        $excluded_cleaned = trim($excluded_raw);
+        update_option('app_seo_nofollow_excluded_domains', $excluded_cleaned);
 
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success is-dismissible"><p>SEO General settings saved.</p></div>';
@@ -224,10 +229,6 @@ class Appetiser_SEO_Admin {
 
         // Reset to default WordPress rules
         if (isset($_POST['reset_htaccess'])) {
-            if (file_exists($htaccess_path) && !file_exists($backup_path)) {
-                copy($htaccess_path, $backup_path);
-            }
-
             $default_htaccess = <<<HT
                 # BEGIN WordPress
                 <IfModule mod_rewrite.c>
@@ -251,7 +252,7 @@ class Appetiser_SEO_Admin {
         // Save + Backup
         if (isset($_POST['save_htaccess'])) {
             $content = isset($_POST['htaccess_content']) ? wp_unslash($_POST['htaccess_content']) : '';
-            if (file_exists($htaccess_path) && !file_exists($backup_path)) {
+            if (file_exists($htaccess_path)) {
                 copy($htaccess_path, $backup_path);
             }
             file_put_contents($htaccess_path, $content);
@@ -309,10 +310,23 @@ class Appetiser_SEO_Admin {
                 <h2>General</h2>
                  <form method="post" action="">
                     <?php wp_nonce_field('app_seo_general_save', 'app_seo_general_nonce'); ?>
-                    <label>
-                        <input type="checkbox" name="external_links_toggle" value="1" <?php checked(get_option('app_seo_external_links') === '1'); ?>>
-                        Automatically add <code>target="_blank"</code> and <code>rel="nofollow"</code> to external links in single blog posts
-                    </label>
+                    
+                    <!-- Toggle -->
+                    <div class="toggle-field">
+                        <label class="toggle-switch">
+                            <input type="checkbox" name="external_links_toggle" value="1" <?php checked(get_option('app_seo_external_links') === '1'); ?>>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">Open external links in new tab + nofollow</span>
+                    </div>
+                    
+                    <!-- Nofollow exclusions -->
+                    <div style="margin-top: 15px;">
+                        <label><strong>Exclude Domains from Nofollow:</strong></label><br>
+                        <textarea name="nofollow_excluded_domains" rows="5" style="width:100%; font-family:monospace;"><?php echo esc_textarea(get_option('app_seo_nofollow_excluded_domains')); ?></textarea>
+                        <p class="description">Enter one domain per line (e.g., <code>youtube.com</code>, <code>example.org</code>)</p>
+                    </div>
+
                     <p><input type="submit" class="button button-primary" name="save_general_settings" value="Save Settings"></p>
                 </form>
             </div>
