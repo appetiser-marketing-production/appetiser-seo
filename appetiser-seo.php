@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Appetiser SEO enhancements
  * Plugin URI:  https://appetiser.com.au
- * Description: Adds essential SEO enhancements such as automatic blog schema generation, dynamic robots.txt control, and other on-page SEO optimizations. Built to complement and extend tools like Yoast SEO..
+ * Description: Adds direct, quick, and essential SEO enhancements such as automatic blog schema generation, dynamic robots.txt control, and other on-page SEO optimizations. Built to complement and extend tools like Yoast SEO.
  * Version: 1.0.0
  * Author: Landing page team
  * Author URI: https://appetiser.com.au
