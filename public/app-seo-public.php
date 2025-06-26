@@ -39,7 +39,7 @@ class Appetiser_SEO_Public {
                 const currentHost = location.hostname;
                 const excluded = <?php echo json_encode($excluded_domains); ?>;
 
-                base.querySelectorAll('a[href^="http"]').forEach(link => {
+                base.querySelectorAll('a[href^="http"]:not(.app-lm-link)').forEach(link => {
                     const linkHost = (new URL(link.href, location.origin)).hostname;
                     const isExternal = linkHost !== currentHost;
                     const isExcluded = excluded.some(domain => linkHost.includes(domain));
