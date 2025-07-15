@@ -56,104 +56,83 @@ class Appetiser_SEO_Admin {
     }
 
     public function auto_generateblog_schema( $post_id, $post, $update ) {
+ 
+        if ( $post->post_type !== 'post' ) return;
+        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+        if ( wp_is_post_revision( $post_id ) ) return;
+        if ( $post->post_status !== 'publish' ) return;
 
-        if ($post->post_type !== 'post') return;
-        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-        if (wp_is_post_revision($post_id)) return;
-        if ($post->post_status !== 'publish') return;
+        // Make sure ACF functions exist
+        if ( ! function_exists( 'get_field' ) || ! function_exists( 'update_field' ) ) return;
 
-        if (!function_exists('get_field') || !function_exists('update_field')) return;
-
-        $headline       = get_the_title($post_id);
-        $description    = get_post_meta($post_id, '_yoast_wpseo_metadesc', true);
-        if (empty($description)) {
-            $content     = get_post_field('post_content', $post_id);
-            $description = wp_trim_words(strip_tags($content), 30, '...');
+        // Core data
+        $headline     = get_the_title( $post_id );
+        $description  = get_post_meta( $post_id, '_yoast_wpseo_metadesc', true );
+        if ( empty( $description ) ) {
+            $content     = get_post_field( 'post_content', $post_id );
+            $description = wp_trim_words( strip_tags( $content ), 30, '...' );
         }
 
-        $date_published = get_the_date('c', $post_id);
-        $date_modified  = get_the_modified_date('c', $post_id);
-        $existing_schema = get_field('schema', $post_id);
+        $date_published = get_the_date( 'c', $post_id );
+        $date_modified  = get_the_modified_date( 'c', $post_id );
+        $image_url      = get_the_post_thumbnail_url( $post_id, 'full' );
+        $author_id      = get_post_field( 'post_author', $post_id );
+        $author_name    = get_the_author_meta( 'display_name', $author_id );
+        $author_url     = get_author_posts_url( $author_id );
+        $publisher_name = "Appetiser";
+        $logo_url       = wp_get_attachment_image_url( 16529, 'full' );
+        $post_url       = get_permalink( $post_id );
 
-        // Optional: Contributor logic
-        $raw_contributors = get_field('field_67bfd0245196b', $post_id);
+        // Get contributors (comma-separated)
+        $contributors_raw = get_field( 'field_67bfd0245196b', $post_id );
         $contributors = [];
 
-        if (!empty($raw_contributors)) {
-            $names = array_map('trim', explode(',', $raw_contributors));
-            foreach ($names as $name) {
-                if ($name !== '') {
+        if ( ! empty( $contributors_raw ) ) {
+            $names = array_map( 'trim', explode( ',', $contributors_raw ) );
+            foreach ( $names as $name ) {
+                if ( $name !== '' ) {
                     $contributors[] = [
                         '@type' => 'Person',
-                        'name'  => $name
+                        'name'  => $name,
                     ];
                 }
             }
         }
 
-        if (!empty($existing_schema)) {
-            $schema_data = json_decode(str_replace(
-                ['<script type="application/ld+json">', '</script>'], '', $existing_schema
-            ), true);
-
-            if (is_array($schema_data)) {
-                $schema_data['headline']      = $headline;
-                $schema_data['description']   = $description;
-                $schema_data['datePublished'] = $date_published;
-                $schema_data['dateModified']  = $date_modified;
-
-                if (!empty($contributors)) {
-                    $schema_data['contributor'] = $contributors;
-                }
-
-                $schema_json = wp_json_encode($schema_data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-                update_field('schema', '<script type="application/ld+json">' . $schema_json . '</script>', $post_id);
-            }
-
-            return;
-        }
-
-        $image_url      = get_the_post_thumbnail_url($post_id, 'full');
-        $author_id      = get_post_field('post_author', $post_id);
-        $author_name    = get_the_author_meta('display_name', $author_id);
-        $author_url     = get_author_posts_url($author_id);
-        $publisher_name = "Appetiser";
-        $logo_url       = wp_get_attachment_image_url(16529, 'full');
-        $post_url       = get_permalink($post_id);
-
         $schema = [
-            "@context" => "https://schema.org",
-            "@type" => "BlogPosting",
-            "headline" => $headline,
-            "description" => $description,
-            "image" => $image_url,
-            "author" => [
-                "@type" => "Person",
-                "name" => $author_name,
-                "url"  => $author_url
+            '@context' => 'https://schema.org',
+            '@type'    => 'BlogPosting',
+            'headline' => $headline,
+            'description' => $description,
+            'image' => $image_url,
+            'author' => [
+                '@type' => 'Person',
+                'name'  => $author_name,
+                'url'   => $author_url,
             ],
-            "publisher" => [
-                "@type" => "Organization",
-                "name" => $publisher_name,
-                "logo" => [
-                    "@type" => "ImageObject",
-                    "url" => $logo_url
-                ]
+            'publisher' => [
+                '@type' => 'Organization',
+                'name'  => $publisher_name,
+                'logo'  => [
+                    '@type' => 'ImageObject',
+                    'url'   => $logo_url,
+                ],
             ],
-            "datePublished" => $date_published,
-            "dateModified" => $date_modified,
-            "mainEntityOfPage" => [
-                "@type" => "WebPage",
-                "@id" => $post_url
-            ]
+            'datePublished' => $date_published,
+            'dateModified'  => $date_modified,
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id'   => $post_url,
+            ],
         ];
 
-        if (!empty($contributors)) {
+        // Only add contributors if present
+        if ( ! empty( $contributors ) ) {
             $schema['contributor'] = $contributors;
         }
 
-        $schema_json = wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        update_field('schema', '<script type="application/ld+json">' . $schema_json . '</script>', $post_id);
+        $schema_json = wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
+        update_field( 'schema', '<script type="application/ld+json">' . $schema_json . '</script>', $post_id );
     }    
 
     public function handle_general_settings_form() {
